@@ -1,0 +1,24 @@
+In this file, we report the optimal value of several spot files either
+as a maximization and a minimization problem.
+Maximization: the objective is to maximize the weights of selected pictures.
+Minimization: the objective is to minimize the weights of unselected
+pictures.
+Obviously both objectives are equivalent
+
+
+pb     sw      max      min
+============================
+8       12       10        2
+54     107       70       37
+29   20091    12032     8059
+42  263117   108067   155050
+28  326158    56053   270105
+5      376      115      261
+404    163       49      114
+408   9310     3082     6228
+412  48483    16102    32381
+414  60598    22120    38478
+503  20209     9096    11113
+505  34353    13100    21253
+507  42527    15137    27390
+509  55571    19125    36446
