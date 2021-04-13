@@ -36,7 +36,8 @@ public class AlgorithmRun {
                         optimalArray[index-1] = problem.optimalValue;
                         statusArray[index-1] = problem.status;
                         gapArray[index-1] = problem.cplexGap;
-                        System.out.printf("index: %d, objective: %d, useTime: %d", index, objectiveArray[index], usedTimeArray[index]);
+                        System.out.printf("index: %d, objective: %d, useTime: %d\n\n",
+                                index, objectiveArray[index], usedTimeArray[index]);
 
                         index += 1;
                         if(index>2){
@@ -45,7 +46,6 @@ public class AlgorithmRun {
                             WriteToCsv.exportCsv(outputFile, fileNameArray, objectiveArray, optimalArray, statusArray, gapArray, usedTimeArray);
                             return;
                         }
-
                     }
                 }
             }
@@ -75,22 +75,24 @@ public class AlgorithmRun {
             optimalArray[i-1] = problem.optimalValue;
             statusArray[i-1] = problem.status;
             gapArray[i-1] = problem.cplexGap;
-            System.out.printf("index: %d, objective: %d, useTime: %d", index, objectiveArray[index], usedTimeArray[index]);
+            System.out.printf("index: %d, objective: %d, useTime: %d\n\n",
+                    i-1, objectiveArray[i-1], usedTimeArray[i-1]);
         }
 
         for(int i=1; i<12; i++){
             String filename = String.format("src/main/resources/GK MKP Benchmarks/gk%d.dat", i);
             long startTime =  System.currentTimeMillis();
             fileNameArray[i+7] = String.format("gk%d.dat", i);
-            Knapsack problem = testOneProblem("GK", filename);
+//            Knapsack problem = testOneProblem("GK", filename);
+            Knapsack problem = testByBFA("GK", filename);
             objectiveArray[i+7] = problem.cplexObjective;
             usedTimeArray[i+7] = (int)(System.currentTimeMillis()-startTime)/1000;
             optimalArray[i+7] = problem.optimalValue;
             statusArray[i+7] = problem.status;
             gapArray[i+7] = problem.cplexGap;
-            System.out.printf("index: %d, objective: %d, useTime: %d", index, objectiveArray[index], usedTimeArray[index]);
+            System.out.printf("index: %d, objective: %d, useTime: %d\n\n", i+7, objectiveArray[i+7], usedTimeArray[i+7]);
         }
-        String outputFile = "src/main/resources/result/CplexForWeingAndChu.csv";
+        String outputFile = "src/main/resources/result/CplexForWeingAndGK.csv";
 
         WriteToCsv.exportCsv(outputFile, fileNameArray, objectiveArray, optimalArray, statusArray, gapArray, usedTimeArray);
     }
@@ -113,7 +115,7 @@ public class AlgorithmRun {
 
     public Knapsack testByBFA(String fileType, String filename) throws IloException, IOException, IllegalAccessException {
         Knapsack problem = new Knapsack(fileType, filename);
-        testOneProblem(problem);
+//        testOneProblem(problem);
         BFA algorithm = new BFA(problem);
         algorithm.setParam(0.02,100,0,50);
         algorithm.bfaSolve();
@@ -124,8 +126,8 @@ public class AlgorithmRun {
     public static void main(String[] args) throws IloException, IOException, IllegalAccessException {
 
         AlgorithmRun algorithmRun = new AlgorithmRun();
-        Knapsack problem = algorithmRun.testByBFA("Chu", "src/main/resources/Chu's MKP Benchmarks/OR5x100/OR5x100-0.25_5.dat");
-//        algorithmRun.testAllWeingAndGK();
+//        Knapsack problem = algorithmRun.testByBFA("Chu", "src/main/resources/Chu's MKP Benchmarks/OR5x100/OR5x100-0.25_5.dat");
+        algorithmRun.testAllWeingAndGK();
 //        algorithmRun.testAllChu();
     }
 }

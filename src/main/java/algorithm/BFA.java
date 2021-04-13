@@ -31,6 +31,7 @@ public class BFA extends metaHeuristicForOneZeroProgramming {
     public void bfaSolve() throws IOException, IllegalAccessException {
         // 生成初始解
         initialSolutionRandom();
+//        initialSolutionRoulette();
         currentBestFitness = getMaxValue(fitnessArray);
         for(int p=0; p<populationSize; p++){
             if(fitnessArray[p]==currentBestFitness){
@@ -72,7 +73,7 @@ public class BFA extends metaHeuristicForOneZeroProgramming {
                             if (random.nextDouble() < alpha)
                                 individual1[j] = !individual1[j];
                         }
-                        // 可行化 todo 检查值是否改变
+
                         repairDropAddByGroup(individual1);
                         //计算适应度函数值
                         fitness = computeFitness(individual1);
@@ -128,7 +129,7 @@ public class BFA extends metaHeuristicForOneZeroProgramming {
         // 检查结果正确性， 并输出
         resultOutPut(fitnessIterRecord, iter);
         // 绘图展示
-//        plotIter("Iteration of BFA", fitnessIterRecord);
+        plotIter();
     }
 
     public void directionalMove() {

@@ -5,11 +5,14 @@ import tasks.Knapsack;
 import utils.WriteToCsv;
 import visualization.LineChartDemo;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.*;
 
 public class metaHeuristicForOneZeroProgramming {
     public Knapsack problem;
+    public String outPutFileName;
     //问题维数
     private final int dimension;
     //问题约束个数
@@ -46,6 +49,7 @@ public class metaHeuristicForOneZeroProgramming {
     public metaHeuristicForOneZeroProgramming(Knapsack problem){
         startTime = System.currentTimeMillis()/1000;
         this.problem = problem;
+        outPutFileName = "src/main/resources/result/"+problem.fileType+".csv";
         optimalValue =Math.max(problem.optimalValue, problem.cplexObjective);
         constraintNum = problem.nConstraint;
         dimension = problem.dimension;
@@ -215,9 +219,10 @@ public class metaHeuristicForOneZeroProgramming {
                     }
                 }
             }
-        }else{
-            System.out.println("无可添加元素");
         }
+//        else{
+//            System.out.println("无可添加元素");
+//        }
     }
 
     private void dropItems(int startConstraintIndex, int endConstraintIndex, boolean[] individual){
@@ -416,6 +421,25 @@ public class metaHeuristicForOneZeroProgramming {
         linechartdemo.setVisible(true);
     }
 
+    public void plotIter(){
+        try {
+            String pyFileName = "C:\\Users\\刘祥\\Documents\\python\\operation_research\\zeroOneLinearProgrmming\\iterPlot.py";
+            String[] args = new String[] { "C:\\ProgramData\\Anaconda3\\python.exe", pyFileName, outPutFileName};
+            Process proc = Runtime.getRuntime().exec(args);// 执行py文件
+            BufferedReader in = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+            String line = null;
+            while ((line = in.readLine()) != null) {
+                System.out.println(line);
+            }
+            in.close();
+            proc.waitFor();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
 //    public void writeIterToCSV(String fileName, String title, int[] fitnessIterRecord) throws IOException, IllegalAccessException {
 //        WriteToCsv.exportCsv(fileName,title, fitnessIterRecord);
 //    }
@@ -430,10 +454,10 @@ public class metaHeuristicForOneZeroProgramming {
             runIter = iter;
             endTime = System.currentTimeMillis() / 1000;
             runTime = endTime - startTime;
-            WriteToCsv.exportCsv("src/main/resources/result/"+problem.fileType+".csv", "BFA", fitnessIterRecord);
-            System.out.printf("算法最优解为%d, cplex最优解为%d,运算时间为%d", metaOptimalValue, problem.cplexObjective, runTime);
+            WriteToCsv.exportCsv(outPutFileName, "BFA", fitnessIterRecord);
+            System.out.printf("算法最优解为%d, 最优解为%d,运算时间为%d\n\n", metaOptimalValue, problem.optimalValue, runTime);
         }else{
-            System.out.println("解不可行，请检查算法");
+            System.out.println("解不可行，请检查算法\n\n");
         }
     }
 }
