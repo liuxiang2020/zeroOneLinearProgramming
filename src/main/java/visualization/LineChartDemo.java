@@ -46,13 +46,15 @@ public class LineChartDemo extends ApplicationFrame {
     private static final long serialVersionUID = -6354350604313079793L;
     static Class class$demo$LineChartDemo;
     private static DefaultCategoryDataset defaultcategorydataset;
+    public static String title;
 
-    public LineChartDemo(String string, int[] fitnessIter) {
-        super(string);
+    public LineChartDemo(String title, int[] fitnessIter) {
+        super(title);
         createDataset(fitnessIter);
         JPanel jpanel = createDemoPanel();
         jpanel.setPreferredSize(new Dimension(500, 270));
         setContentPane(jpanel);
+        this.title = title;
     }
 
     /**
@@ -72,7 +74,7 @@ public class LineChartDemo extends ApplicationFrame {
 
     private static JFreeChart createChart(CategoryDataset categorydataset) {
         JFreeChart jfreechart = ChartFactory.createLineChart(
-                "jfreechart test",// 图表标题
+                title,// 图表标题
                 "X", // 主轴标签（x轴）
                 "Y",// 范围轴标签（y轴）
                 categorydataset, // 数据集

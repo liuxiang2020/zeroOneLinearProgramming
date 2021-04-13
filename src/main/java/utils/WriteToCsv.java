@@ -9,8 +9,10 @@ import java.util.List;
 
 public class WriteToCsv {
 
+    public static Object exportCsv;
+
     public static <T> String exportCsv(String fileName,
-            String[] titles, String[] propertys, List<T> list) throws IOException, IllegalArgumentException, IllegalAccessException{
+                                       String[] titles, String[] propertys, List<T> list) throws IOException, IllegalArgumentException, IllegalAccessException{
         File file = new File(fileName);
         //构建输出流，同时指定编码
         OutputStreamWriter ow = new OutputStreamWriter(new FileOutputStream(file), "gbk");
@@ -72,6 +74,23 @@ public class WriteToCsv {
         }
         ow.flush();
         ow.close();
+    }
 
+    public static void exportCsv(String fileName,  String title, int[] array) throws IOException, IllegalArgumentException, IllegalAccessException{
+        File file = new File(fileName);
+        //构建输出流，同时指定编码
+        OutputStreamWriter ow = new OutputStreamWriter(new FileOutputStream(file), "gbk");
+        ow.write(title);
+        ow.write(",");
+        //写完文件头后换行
+        ow.write("\r\n");
+        //写内容
+        for (int j : array) {
+            ow.write(j+",");
+            //写完一行换行
+            ow.write("\r\n");
+        }
+        ow.flush();
+        ow.close();
     }
 }

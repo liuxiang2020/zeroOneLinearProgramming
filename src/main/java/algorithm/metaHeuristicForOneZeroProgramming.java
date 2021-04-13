@@ -2,12 +2,11 @@ package algorithm;
 
 import org.jfree.ui.RefineryUtilities;
 import tasks.Knapsack;
+import utils.WriteToCsv;
 import visualization.LineChartDemo;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
+import java.io.IOException;
+import java.util.*;
 
 public class metaHeuristicForOneZeroProgramming {
     public Knapsack problem;
@@ -17,6 +16,7 @@ public class metaHeuristicForOneZeroProgramming {
     private final int constraintNum;
     // 文献或Cplex最好解
     public int optimalValue;
+    public int metaOptimalValue;
     // 种群大小
     public int populationSize = 100;
     //最大迭代次数
@@ -38,7 +38,9 @@ public class metaHeuristicForOneZeroProgramming {
     public long endTime;
 
     // 算法中需要用到的在每个约束中，每个元素的价值密度
+    // drop操作使用
     public double[][] localUnitPriceOfWeight;
+    // add操作使用
     public double[][] localUnitWeightOfPrice;
 
     public metaHeuristicForOneZeroProgramming(Knapsack problem){
@@ -74,7 +76,7 @@ public class metaHeuristicForOneZeroProgramming {
     }
 
     /**
-     * 随机设生成初始解
+     * 随机生成初始解
      */
     public void initialSolutionRandom(){
         //随机生成初始解
@@ -87,15 +89,13 @@ public class metaHeuristicForOneZeroProgramming {
         }
         //将其装换为可行解,并计算目标函数值
         for(int p=0; p<populationSize;p++){
-            // todo 检查结果是否正确
             repairDropAddByGroup(population[p]);
             fitnessArray[p] = computeFitness(population[p]);
         }
-
     }
 
-    public Integer getMaxValue(Integer[] array){
-        Integer maxValue = 0;
+    public int getMaxValue(Integer[] array){
+        int maxValue = 0;
         for(int value: array){
             if(value>maxValue)
                 maxValue = value;
@@ -106,19 +106,19 @@ public class metaHeuristicForOneZeroProgramming {
     /**
      * 按照每个约束的系数，按照轮盘赌的方式随机生成初始解
      */
-    public void initialSolutionGreedy(){
+    public void initialSolutionRoulette(){
 
         population = new boolean[populationSize][dimension];
         fitnessArray = new Integer[populationSize];
         int p=0;
         while(p<populationSize){
-            for(int i=0; i<constraintNum; i++){
+            for(int i=0; i<constraintNum & p < populationSize; i++){
                 int[] candidateItem = new int[dimension];
                 Double[] addProbability = new Double[dimension];
                 Random random = new Random();
                 for(int j=0; j<dimension; j++){
                     candidateItem[j] = j;
-                    addProbability[j] = localUnitPriceOfWeight[i][j]*random.nextDouble();
+                    addProbability[j] = localUnitWeightOfPrice[i][j]*random.nextDouble();
                 }
                 //随机排序
                 QuickSortThreeWays.sortThreeWays(addProbability, candidateItem);
@@ -143,10 +143,9 @@ public class metaHeuristicForOneZeroProgramming {
             }
         }
 
-        for(int pp=0; pp<populationSize;pp++){
-            fitnessArray[pp] = computeFitness(population[pp]);
+        for(p=0; p<populationSize;p++){
+            fitnessArray[p] = computeFitness(population[p]);
         }
-
 //        population = new boolean[populationSize][dimension];
 //        for(int p=0; p<populationSize; p++){
 //            List<Integer> itemIndexList = new ArrayList<>();
@@ -181,7 +180,7 @@ public class metaHeuristicForOneZeroProgramming {
     }
 
     public void repairDropAddByGroup(boolean[] individual){
-        //  todo 检测是元素是否改变了
+
         // 丢弃操作,暂时分为两组测试
 
         int thred = new Random().nextInt(constraintNum);
@@ -193,23 +192,31 @@ public class metaHeuristicForOneZeroProgramming {
         // 增加操作
         //获得可添加的元素的序号
         AddItem addItem = new AddItem(individual);
-        addItem.getCandidateItem();
-        // 提供了三种增加操作
-        int[] candidateItem = addItem.addRouletteByPrice();
-        for (int index: candidateItem){
-            //检查是否可添加
-            for(int i=0; i<constraintNum; i++){
-                if(addItem.leftCapacityArray[i] < addItem.unChooseItemMinWeightByCons[i])
-                    return;
-                if(addItem.leftCapacityArray[i] < problem.weights[i][index])
-                    break;
+        if(addItem.getCandidateItem()){
+            // 提供了三种增加操作
+            int[] candidateItem = addItem.addRouletteByPrice();
+            for (int index: candidateItem){
+                boolean flag = true;
+                //检查是否可添加
+                for(int i=0; i<constraintNum; i++){
+                    if(addItem.leftCapacityArray[i] < addItem.unChooseItemMinWeightByCons[i])
+                        return;
+                    if(addItem.leftCapacityArray[i] < problem.weights[i][index]){
+                        flag = false;
+                        break;
+                    }
+                }
+                //添加
+                if(flag){
+                    individual[index] = true;
+                    // 更新剩余容量
+                    for(int i=0; i<constraintNum; i++){
+                        addItem.leftCapacityArray[i] -= problem.weights[i][index];
+                    }
+                }
             }
-            //添加
-            individual[index] = true;
-            // 更新剩余容量
-            for(int i=0; i<constraintNum; i++){
-                addItem.leftCapacityArray[i] -= problem.weights[i][index];
-            }
+        }else{
+            System.out.println("无可添加元素");
         }
     }
 
@@ -219,22 +226,22 @@ public class metaHeuristicForOneZeroProgramming {
             int gap = getConstraintTotalWeight(individual, i) - problem.capacity[i];
             if(gap>0){
                 int chooseItemNum = getChooseItemNum(individual);
-                Double[] chooseItemWeight = new Double[chooseItemNum];
+                Double[] chooseItemDropProbability = new Double[chooseItemNum];
                 int[] chooseItemIndex = new int[chooseItemNum];
                 int k = 0;
                 Random random = new Random();
                 for(int j=0; j<dimension; j++){
                     if(individual[j]){
-                        chooseItemWeight[k] = localUnitPriceOfWeight[i][j]*random.nextDouble();
+                        chooseItemDropProbability[k] = localUnitPriceOfWeight[i][j]*random.nextDouble();
                         chooseItemIndex[k] = j;
                         k +=1;
                     }
                 }
-                QuickSortThreeWays.sortThreeWays(chooseItemWeight, chooseItemIndex);
+                QuickSortThreeWays.sortThreeWays(chooseItemDropProbability, chooseItemIndex);
                 // 排查对于此约束应该删除的变量
                 int index = 0;
                 int dropValue = 0;
-
+                // 整理丢弃变量的下标
                 while(dropValue<gap){
                     int dropIndex = chooseItemIndex[index];
                     dropValue += problem.weights[i][dropIndex];
@@ -274,9 +281,13 @@ public class metaHeuristicForOneZeroProgramming {
             chooseItemNum = getChooseItemNum(individual);
         }
 
-        void getCandidateItem(){
+        /**
+         *
+         * @return 是否有可添加元素
+         */
+        boolean getCandidateItem(){
 
-            unChooseItemMinWeightByCons = new int[constraintNum];
+            unChooseItemMinWeightByCons = problem.capacity.clone();
             int[] unChooseItems = new int[dimension-chooseItemNum];
             int k=0;
             for(int j=0; j<dimension; j++){
@@ -292,10 +303,10 @@ public class metaHeuristicForOneZeroProgramming {
                     }
                 }
             }
-
+//            Arrays.stream(problem.weights[0]).min().getAsInt();  //返回数组的最小值
             for(int i=0; i<constraintNum; i++){
                 if(leftCapacityArray[i] < unChooseItemMinWeightByCons[i]){
-                    return;
+                    return false;
                 }
             }
 
@@ -315,15 +326,15 @@ public class metaHeuristicForOneZeroProgramming {
                     candidateNum += 1;
                 }
             }
-
-            candidateItem = new int[candidateIndex.size()];
+            candidateItem = new int[candidateNum];
             for(int i=0;i<candidateNum;i++){
                 candidateItem[i] = candidateIndex.get(i);
             }
+            return true;
         }
 
         /**
-         * 根据每个商品的价格贪婪选择方法
+         * 根据每个商品的价格贪婪add元素
          */
         int[] addByPrice(){
             Integer[] addProbability = new Integer[candidateItem.length];
@@ -399,11 +410,30 @@ public class metaHeuristicForOneZeroProgramming {
      * @param fitnessRecord
      */
     public void plotIter(String title, int[] fitnessRecord){
-
         LineChartDemo linechartdemo = new LineChartDemo(title, fitnessRecord);
         linechartdemo.pack();
         RefineryUtilities.centerFrameOnScreen(linechartdemo);
         linechartdemo.setVisible(true);
     }
 
+//    public void writeIterToCSV(String fileName, String title, int[] fitnessIterRecord) throws IOException, IllegalAccessException {
+//        WriteToCsv.exportCsv(fileName,title, fitnessIterRecord);
+//    }
+
+    void resultOutPut(int[] fitnessIterRecord, int iter) throws IOException, IllegalAccessException {
+        if(feasibleCheck(currentBestSolution)){
+            bestSolution = currentBestSolution;
+            metaOptimalValue = currentBestFitness;
+            runIter = maxIter;
+            endTime = System.currentTimeMillis() / 1000;
+            runTime = endTime - startTime;
+            runIter = iter;
+            endTime = System.currentTimeMillis() / 1000;
+            runTime = endTime - startTime;
+            WriteToCsv.exportCsv("src/main/resources/result/"+problem.fileType+".csv", "BFA", fitnessIterRecord);
+            System.out.printf("算法最优解为%d, cplex最优解为%d,运算时间为%d", metaOptimalValue, problem.cplexObjective, runTime);
+        }else{
+            System.out.println("解不可行，请检查算法");
+        }
+    }
 }

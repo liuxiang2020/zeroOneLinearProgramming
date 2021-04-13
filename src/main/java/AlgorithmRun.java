@@ -104,20 +104,29 @@ public class AlgorithmRun {
         return problem;
     }
 
-    public Knapsack testByBFA(String fileType, String filename){
+    public void testOneProblem(Knapsack problem) throws IloException {
+        CplexSolve cplexSolve = new CplexSolve(problem);
+        cplexSolve.solveModel();
+        problem.setCplexObjective(cplexSolve.objectiveValue);
+        problem.setCplexGap(cplexSolve.gap);
+    }
+
+    public Knapsack testByBFA(String fileType, String filename) throws IloException, IOException, IllegalAccessException {
         Knapsack problem = new Knapsack(fileType, filename);
+        testOneProblem(problem);
         BFA algorithm = new BFA(problem);
-        algorithm.setParam(0.02,1,0,50);
+        algorithm.setParam(0.02,100,0,50);
         algorithm.bfaSolve();
         return problem;
     }
 
 
-
     public static void main(String[] args) throws IloException, IOException, IllegalAccessException {
+
         AlgorithmRun algorithmRun = new AlgorithmRun();
-        algorithmRun.testAllWeingAndGK();
-        algorithmRun.testAllChu();
+        Knapsack problem = algorithmRun.testByBFA("Chu", "src/main/resources/Chu's MKP Benchmarks/OR5x100/OR5x100-0.25_5.dat");
+//        algorithmRun.testAllWeingAndGK();
+//        algorithmRun.testAllChu();
     }
 }
 

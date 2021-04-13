@@ -1,13 +1,15 @@
 package algorithm;
 
 import tasks.Knapsack;
+import utils.WriteToCsv;
 
+import java.io.IOException;
 import java.util.Random;
 
 public class BFA extends metaHeuristicForOneZeroProgramming {
 
     public double alpha = 0.01;
-    public int gama = 100;
+    public double gama = 100.0;
     public int bet0 = 1;
     // 种群大小
 
@@ -16,26 +18,28 @@ public class BFA extends metaHeuristicForOneZeroProgramming {
 
     public BFA(Knapsack problem) {
         super(problem);
-        this.maxIter = problem.dimension * 10;
+        this.maxIter = problem.dimension * 100;
     }
 
-    public void setParam(double _alpha, int _gama, int _bet0, int _populationSize) {
+    public void setParam(double _alpha, double _gama, int _bet0, int _populationSize) {
         this.alpha = _alpha;
         this.bet0 = _bet0;
         this.gama = _gama;
         setPopulationSize(_populationSize);
     }
 
-    public void bfaSolve() {
+    public void bfaSolve() throws IOException, IllegalAccessException {
         // 生成初始解
         initialSolutionRandom();
         currentBestFitness = getMaxValue(fitnessArray);
         for(int p=0; p<populationSize; p++){
             if(fitnessArray[p]==currentBestFitness){
                 currentBestSolution = population[p];
+                break;
             }
         }
-
+        // 更新gamma值
+        gama = gama/Math.pow(problem.dimension, 2);
         int iter = 0;
         int[] fitnessIterRecord = new int[maxIter];
         Random random = new Random();
@@ -51,16 +55,15 @@ public class BFA extends metaHeuristicForOneZeroProgramming {
                         int[] diffIndex = new int[problem.dimension];
                         int diffSize = 0;
                         for (int j = 0; j < problem.dimension; j++) {
-                            if (individual1[j] == individual2[j]) {
+                            if (individual1[j] != individual2[j]) {
                                 diffIndex[diffSize] = j;
                                 diffSize += 1;
                             }
                         }
                         //定向移动
                         double flagValue = bet0 * Math.exp(-gama * Math.pow(diffSize, 2));
-                        for (int j = 0; j < diffSize; j++) {
+                        for (int index: diffIndex) {
                             if (random.nextDouble() < flagValue) {
-                                int index = diffIndex[j];
                                 individual1[index] = individual2[index];
                             }
                         }
@@ -82,17 +85,10 @@ public class BFA extends metaHeuristicForOneZeroProgramming {
                             population[p1] = individual1.clone();
                             fitnessArray[p1] = fitness;
                             if (fitness >= problem.optimalValue) {
-                                bestSolution = individual1;
-                                optimalValue = fitness;
-                                runIter = iter;
-                                endTime = System.currentTimeMillis() / 1000;
-                                runTime = endTime - startTime;
-                                boolean feasible = feasibleCheck(individual1);
-                                return;
+                                resultOutPut(fitnessIterRecord, iter);
                             }
                         }
                     }
-
                 }
             }
             // 最亮的萤火虫随机移动
@@ -129,27 +125,11 @@ public class BFA extends metaHeuristicForOneZeroProgramming {
 
             iter += 1;
         }
-        // 结果正确性检查
-        boolean feasible = feasibleCheck(currentBestSolution);
-        if(feasible){
-            bestSolution = currentBestSolution;
-            optimalValue = currentBestFitness;
-            runIter = maxIter;
-            endTime = System.currentTimeMillis() / 1000;
-            runTime = endTime - startTime;
-            optimalValue = currentBestFitness;
-            runIter = maxIter;
-            endTime = System.currentTimeMillis() / 1000;
-            runTime = endTime - startTime;
-            System.out.printf("算法最优解为%d, cplex最优解为%d,运算时间为%d", optimalValue, problem.cplexObjective, runTime);
-        }else{
-            System.out.println("解不可行，请检查算法");
-        }
+        // 检查结果正确性， 并输出
+        resultOutPut(fitnessIterRecord, iter);
         // 绘图展示
-        plotIter("Iteration of BFA", fitnessIterRecord);
-
+//        plotIter("Iteration of BFA", fitnessIterRecord);
     }
-
 
     public void directionalMove() {
 
