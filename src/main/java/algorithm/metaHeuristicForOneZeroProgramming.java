@@ -131,7 +131,7 @@ public class metaHeuristicForOneZeroProgramming {
                 for (int index: candidateItem){
                     boolean exitFlag = false;
                     for(int k=0; k<constraintNum; k++){
-                        if (occupyCapacity[k] + problem.weights[k][index] > problem.capacity[i]) {
+                        if (occupyCapacity[k] + problem.weights[k][index] > problem.capacity[k]) {
                             exitFlag = true;
                             break;
                         }
@@ -181,6 +181,47 @@ public class metaHeuristicForOneZeroProgramming {
                 fitness += problem.prices[i];
         }
         return fitness;
+    }
+
+    public void RO2(boolean[] individual){
+        //提前计算很多东西
+        //按逐个约束丢弃
+        // 判断每个约束违反的程度
+        Integer[] gapArray = new Integer[constraintNum];
+        int[] dropConsSeq = new int[constraintNum];
+        for(int i=0; i<constraintNum; i++){
+            dropConsSeq[i] = i;
+            gapArray[i] = getConstraintTotalWeight(individual, i) - problem.capacity[i];
+        }
+        QuickSortThreeWays.sortThreeWays(gapArray, dropConsSeq);
+        for(int i=0; i<constraintNum; i++){
+            if(gapArray[i]<=0){
+                break;
+            }
+            int gap = gapArray[i];
+            int index = dropConsSeq[i];
+            for(int dropIndex: problem.localDropSeq[index]){
+                if(individual[dropIndex]){
+                    gap -= problem.weights[index][dropIndex];
+                    individual[dropIndex] = false;
+                    // todo 需修改
+                    for(int k=0; k<constraintNum; k++){
+                        int kk = 0;
+                        for(kk=0; kk<constraintNum; kk++){
+                            if(dropConsSeq[kk]==k)
+                                break;
+                        }
+                        gapArray[kk] -= problem.weights[k][dropIndex];
+                    }
+                    if(gap<=0)
+                        break;
+                }
+            }
+        }
+
+        // 增加操作
+
+
     }
 
     public void repairDropAddByGroup(boolean[] individual){
@@ -421,7 +462,8 @@ public class metaHeuristicForOneZeroProgramming {
         linechartdemo.setVisible(true);
     }
 
-    public void plotIter(){
+    //使用python绘图
+    public void plotIterByPython(){
         try {
             String pyFileName = "C:\\Users\\刘祥\\Documents\\python\\operation_research\\zeroOneLinearProgrmming\\iterPlot.py";
             String[] args = new String[] { "C:\\ProgramData\\Anaconda3\\python.exe", pyFileName, outPutFileName};

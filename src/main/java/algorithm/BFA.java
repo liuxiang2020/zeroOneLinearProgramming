@@ -1,7 +1,6 @@
 package algorithm;
 
 import tasks.Knapsack;
-import utils.WriteToCsv;
 
 import java.io.IOException;
 import java.util.Random;
@@ -129,7 +128,7 @@ public class BFA extends metaHeuristicForOneZeroProgramming {
         // 检查结果正确性， 并输出
         resultOutPut(fitnessIterRecord, iter);
         // 绘图展示
-        plotIter();
+        plotIterByPython();
     }
 
     public void directionalMove() {

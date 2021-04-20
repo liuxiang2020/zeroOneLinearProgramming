@@ -79,21 +79,28 @@ public class QuickSortThreeWays {
 
     }
     public static void main(String[] args) {
-
-        Integer[] nums = new Integer[20];
+        int k = 5;
+        Integer[] nums = new Integer[k];
         Random random = new Random();
-        for(int i=0; i<20; i++){
+        for(int i=0; i<k; i++){
             nums[i] = random.nextInt(100);
         }
         int[] indexArray = new int[nums.length];
         for(int i=0; i<nums.length; i++){
             indexArray[i] = i+1;
         }
+
+        System.out.println("排序前");
+        for (Integer num : nums) {
+            System.out.print(num+",");
+        }
+
         sortThreeWays(nums, indexArray);
+        System.out.println("\n排序后的下标值");
         for (int j : indexArray) {
             System.out.print(j+",");
         }
-        System.out.println("");
+        System.out.println("\n排序后的元素值");
         for (Integer num : nums) {
             System.out.print(num+",");
         }

@@ -16,6 +16,7 @@ public class CplexSolve {
     protected IloIntVar[] x;
     public int objectiveValue;
     public double gap;
+    public String status;
 
     public CplexSolve(Knapsack problem) throws IloException {
         this.problem = problem;
@@ -60,17 +61,14 @@ public class CplexSolve {
         addVariables();
         addObjective();
         addConstraints();
-        model.exportModel(problem.fileName+".lp");
-        setParam(100.0, 0.001);
+//        model.exportModel(problem.fileName+".lp");
+        setParam(100.0, 0);
 
-        model.solve();// questo metodo risolve il problema
+        model.solve();
 
         if (model.getStatus() == IloCplex.Status.Feasible | model.getStatus() == IloCplex.Status.Optimal) {
-            System.out.println();
-            System.out.println("Solution status = "+ model.getStatus());
-            System.out.println();
-            System.out.println();
 
+            System.out.println("Solution status = "+ model.getStatus());
             int sumPrices = 0;
             int chooseitemNum= 0;
             for (int j = 0; j < problem.dimension; j++) {
@@ -83,6 +81,7 @@ public class CplexSolve {
             }
             objectiveValue = (int) model.getObjValue();
             gap = model.getMIPRelativeGap();
+            status = model.getStatus().toString();
             System.out.printf("目标函数值为%d:, 选择了%d个商品%n", objectiveValue, chooseitemNum);
         } else {
             System.out.println("The problem status is:" + model.getStatus());

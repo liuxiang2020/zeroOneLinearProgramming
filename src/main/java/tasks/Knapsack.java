@@ -1,5 +1,6 @@
 package tasks;
 
+import algorithm.QuickSortThreeWays;
 import utils.ExcelData;
 
 import java.io.File;
@@ -16,6 +17,11 @@ public class Knapsack {
     public int[] priceWeightLineNumbers;
     public double[] unitWeightOfPrices;
     public double[] unitPriceOfWeight;
+    // drop操作使用
+    public double[][] localUnitPriceOfWeight;
+    public int[][] localDropSeq;
+    // add操作使用
+    public double[][] localUnitWeightOfPrice;
 
     public int optimalValue;
     public String status = "unKnow";
@@ -23,6 +29,7 @@ public class Knapsack {
     public String fileType;
     public int cplexObjective;
     public double cplexGap;
+    public String cplexStatus;
 
     public void setCplexObjective(int value){
         this.cplexObjective = value;
@@ -30,6 +37,10 @@ public class Knapsack {
 
     public void setCplexGap(double value){
         this.cplexGap = value;
+    }
+
+    public void setCplexStatus(String status){
+        this.cplexStatus = status;
     }
 
     public Knapsack(String filetype, String fileName){
@@ -83,11 +94,12 @@ public class Knapsack {
                 }
                 unitWeightOfPrices[i] = prices[i] * 1.0 / weightSum;
                 unitPriceOfWeight[i] = 1.0/unitWeightOfPrices[i];
-
             }
 
             for(int i=0; i<nConstraint; i++)
                 capacity[i] = fileIn.nextInt();
+            //计算价值密度
+            vdCompute();
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -151,6 +163,9 @@ public class Knapsack {
             for(int i=0; i<nConstraint; i++)
                 capacity[i] = fileIn.nextInt();
 
+            // 计算价值密度
+            vdCompute();
+
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -158,6 +173,73 @@ public class Knapsack {
 
     public void readFromSpot5(String filename){
 
+    }
 
+    public void vdCompute(){
+        localUnitPriceOfWeight = new double[nConstraint][dimension];
+        localUnitWeightOfPrice = new double[nConstraint][dimension];
+        for(int i=0; i<nConstraint; i++){
+            for(int j=0; j < dimension; j++){
+                localUnitPriceOfWeight[i][j] = weights[i][j]*1.0/prices[j];
+                if(localUnitPriceOfWeight[i][j]==0){
+                    localUnitWeightOfPrice[i][j] = 1000;
+                }else{
+                    localUnitWeightOfPrice[i][j] = 1.0 / localUnitPriceOfWeight[i][j];
+                }
+            }
+        }
+    }
+
+    /**
+     * 提前对变量和约束排序
+     * 排序指标：price, weight， weight/price
+     */
+    public void itemPreSortForOR2(){
+        localDropSeq = new int[nConstraint][dimension];
+        for(int i=0; i<nConstraint; i++){
+            for(int j=0; j < dimension; j++){
+                localDropSeq[i][j] = j;
+            }
+        }
+        for(int i=0; i<nConstraint; i++){
+            Double[] temp = new Double[dimension];
+            for(int j=0; j<dimension; j++)
+                temp[j] = localUnitPriceOfWeight[i][j];
+            QuickSortThreeWays.sortThreeWays(temp, localDropSeq[i]);
+        }
+    }
+    public void itemPreSortForDAOR(){
+        int[] seq = new int[dimension];
+        Double[] temp = new Double[dimension];
+        for(int i=0; i<dimension; i++){
+            seq[i] = i;
+            temp[i] = unitWeightOfPrices[i];
+        }
+        QuickSortThreeWays.sortThreeWays(temp, seq);
+        // 更新所有变量
+        int[][] weightsCopy = weights.clone();
+        int[] pricesCopy = prices.clone();
+//        int[] priceWeightLineNumbers;
+        double[] unitWeightOfPricesCopy = unitWeightOfPrices.clone();
+        double[] unitPriceOfWeightCopy = unitPriceOfWeight.clone();
+
+        // drop操作使用
+        double[][] localUnitPriceOfWeightCopy = localUnitPriceOfWeight.clone();
+        int[][] localDropSeqCopy = localDropSeq.clone();
+        // add操作使用
+        double[][] localUnitWeightOfPriceCopy = localUnitWeightOfPrice.clone();
+
+        for(int j=0; j<dimension; j++){
+            int index = seq[j];
+            prices[j] = pricesCopy[index];
+            unitWeightOfPrices[j] = unitWeightOfPricesCopy[index];
+            unitPriceOfWeight[j] = unitPriceOfWeightCopy[index];
+            for(int i=0; i<nConstraint; i++){
+                weights[i][j] = weightsCopy[i][index];
+                localUnitPriceOfWeight[i][j] = localUnitPriceOfWeightCopy[i][index];
+                localDropSeq[i][j] = localDropSeqCopy[i][index];
+                localUnitWeightOfPrice[i][j] = localUnitWeightOfPriceCopy[i][index];
+            }
+        }
     }
 }
