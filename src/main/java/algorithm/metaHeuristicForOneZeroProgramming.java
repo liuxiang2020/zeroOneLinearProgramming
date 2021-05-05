@@ -125,7 +125,7 @@ public class metaHeuristicForOneZeroProgramming {
                     addProbability[j] = localUnitWeightOfPrice[i][j]*random.nextDouble();
                 }
                 //随机排序
-                QuickSortThreeWays.sortThreeWays(addProbability, candidateItem);
+                QuickSortThreeWays.sortThreeWays(addProbability, candidateItem, false);
                 //根据排序结果构造解
                 int[] occupyCapacity = new int[constraintNum];
                 for (int index: candidateItem){
@@ -183,9 +183,15 @@ public class metaHeuristicForOneZeroProgramming {
         return fitness;
     }
 
+    /**
+     * 按逐个约束丢弃
+     * 添加时找到剩余容量最小的约束添加
+     * @param individual
+     */
+
+
     public void RO2(boolean[] individual){
-        //提前计算很多东西
-        //按逐个约束丢弃
+
         // 判断每个约束违反的程度
         Integer[] gapArray = new Integer[constraintNum];
         int[] dropConsSeq = new int[constraintNum];
@@ -193,35 +199,51 @@ public class metaHeuristicForOneZeroProgramming {
             dropConsSeq[i] = i;
             gapArray[i] = getConstraintTotalWeight(individual, i) - problem.capacity[i];
         }
-        QuickSortThreeWays.sortThreeWays(gapArray, dropConsSeq);
+        QuickSortThreeWays.sortThreeWays(gapArray, dropConsSeq, false);
         for(int i=0; i<constraintNum; i++){
             if(gapArray[i]<=0){
                 break;
             }
-            int gap = gapArray[i];
             int index = dropConsSeq[i];
             for(int dropIndex: problem.localDropSeq[index]){
                 if(individual[dropIndex]){
-                    gap -= problem.weights[index][dropIndex];
                     individual[dropIndex] = false;
-                    // todo 需修改
                     for(int k=0; k<constraintNum; k++){
-                        int kk = 0;
-                        for(kk=0; kk<constraintNum; kk++){
-                            if(dropConsSeq[kk]==k)
-                                break;
-                        }
-                        gapArray[kk] -= problem.weights[k][dropIndex];
+                        gapArray[k] -= problem.weights[dropConsSeq[k]][dropIndex];
                     }
-                    if(gap<=0)
+                    if(gapArray[i]<=0)
                         break;
                 }
             }
         }
+        // 增加操作: 逆序增加
+        Integer[] leftArray = new Integer[constraintNum];
+        int[] addConsSeq = new int[constraintNum];
+        for(int i=0; i<constraintNum; i++){
+            addConsSeq[i] = i;
+            leftArray[i] = problem.capacity[i] - getConstraintTotalWeight(individual, i);
+        }
+        QuickSortThreeWays.sortThreeWays(leftArray, addConsSeq, true);
 
         // 增加操作
-
-
+        int k = addConsSeq[0];
+        for(int j: problem.localDropSeq[k]){
+            if(!individual[j]){
+                boolean flag = true;
+                for(int i=0; i<constraintNum; i++){
+                    if(!(leftArray[i] - problem.weights[addConsSeq[i]][j]>=0)){
+                        flag = false;
+                        break;
+                    }
+                }
+                if(flag){
+                    individual[j] = true;
+                    for(int i=0; i<constraintNum; i++){
+                        leftArray[i] -= problem.weights[i][j];
+                    }
+                }
+            }
+        }
     }
 
     public void repairDropAddByGroup(boolean[] individual){
@@ -283,7 +305,7 @@ public class metaHeuristicForOneZeroProgramming {
                         k +=1;
                     }
                 }
-                QuickSortThreeWays.sortThreeWays(chooseItemDropProbability, chooseItemIndex);
+                QuickSortThreeWays.sortThreeWays(chooseItemDropProbability, chooseItemIndex, false);
                 // 排查对于此约束应该删除的变量
                 int index = 0;
                 int dropValue = 0;
@@ -386,7 +408,7 @@ public class metaHeuristicForOneZeroProgramming {
             Integer[] addProbability = new Integer[candidateItem.length];
             for(int i=0; i < addProbability.length; i++)
                 addProbability[i] = problem.prices[i];
-            QuickSortThreeWays.sortThreeWays(addProbability, candidateItem);
+            QuickSortThreeWays.sortThreeWays(addProbability, candidateItem, false);
             return candidateItem;
         }
 
@@ -399,7 +421,7 @@ public class metaHeuristicForOneZeroProgramming {
             for(int i=0; i < addProbability.length; i++){
                 addProbability[i] = problem.prices[i]*1.0*random.nextDouble();
             }
-            QuickSortThreeWays.sortThreeWays(addProbability, candidateItem);
+            QuickSortThreeWays.sortThreeWays(addProbability, candidateItem, false);
             return candidateItem;
         }
 
@@ -412,11 +434,10 @@ public class metaHeuristicForOneZeroProgramming {
             for(int i=0; i < addProbability.length; i++){
                 addProbability[i] = problem.unitWeightOfPrices[i]*1.0*random.nextDouble();
             }
-            QuickSortThreeWays.sortThreeWays(addProbability, candidateItem);
+            QuickSortThreeWays.sortThreeWays(addProbability, candidateItem, false);
             return candidateItem;
         }
     }
-
 
     int getConstraintTotalWeight(boolean[] individual, int index){
         int weightSum=0;

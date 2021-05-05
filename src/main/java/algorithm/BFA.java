@@ -110,7 +110,7 @@ public class BFA extends metaHeuristicForOneZeroProgramming {
             for(int i=0; i<populationSize; i++){
                 indexArray[i] = i;
             }
-            QuickSortThreeWays.sortThreeWays(fitnessArray, indexArray);
+            QuickSortThreeWays.sortThreeWays(fitnessArray, indexArray, false);
             boolean[][] populationCopy = population.clone();
             for(int i=0; i<populationSize; i++){
                 population[i] = populationCopy[populationSize-1-i];

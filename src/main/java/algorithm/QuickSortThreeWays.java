@@ -8,26 +8,70 @@ public class QuickSortThreeWays {
 
     }
 
+
     /**
      * 双路快速排序法
      *
      * @param arr 待排序数组
      * @param <E>
      */
-    public static <E extends Comparable<E>> void sortThreeWays(E[] arr, int[] indexArray) {
+    public static <E extends Comparable<E>> void sortThreeWays(E[] arr, int[] indexArray, boolean ascending) {
         Random random = new Random();
-        sortThreeWays(arr, 0, arr.length - 1, indexArray, random);
+        if(ascending){
+            sortThreeWayAscending(arr, 0, arr.length - 1, indexArray, random);
+        }else{
+            sortThreeWaysDescending(arr, 0, arr.length - 1, indexArray, random);
+        }
     }
 
     /**
      * 私有排序方法
-     *
      * @param arr 待排序数组
      * @param l   数组左边界
      * @param r   数组右边界
      * @param <E>
      */
-    private static <E extends Comparable<E>> void sortThreeWays(E[] arr, int l, int r, int[] indexArray, Random random) {
+    private static <E extends Comparable<E>> void sortThreeWayAscending(E[] arr, int l, int r, int[] indexArray, Random random) {
+        if (l >= r) {
+            return;
+        }
+
+        // 生成 [l, r] 之间的随机索引
+        int p = l + random.nextInt(r - l + 1);
+        swap(arr, l, p, indexArray);
+
+        // arr[l + 1, lt] < v, arr[lt + 1, i - 1] == v, arr[gt, r] > v
+        int lt = l;
+        int i = l + 1;
+        int gt = r + 1;
+        while (i < gt) {
+            if (arr[i].compareTo(arr[l]) < 0) {
+                lt++;
+                swap(arr, i, lt, indexArray);
+                i++;
+            } else if (arr[i].compareTo(arr[l]) > 0) {
+                gt--;
+                swap(arr, i, gt, indexArray);
+            } else {
+                // arr[i] == arr[l]
+                i++;
+            }
+        }
+        swap(arr, l, lt, indexArray);
+        // 此时 arr[l, lt] < v, arr[lt, gt - 1] == v, arr[gt, r] > v
+        sortThreeWayAscending(arr, l, lt - 1, indexArray, random);
+        sortThreeWayAscending(arr, gt, r, indexArray, random);
+    }
+
+
+    /**
+     * 私有排序方法
+     * @param arr 待排序数组
+     * @param l   数组左边界
+     * @param r   数组右边界
+     * @param <E>
+     */
+    private static <E extends Comparable<E>> void sortThreeWaysDescending(E[] arr, int l, int r, int[] indexArray, Random random) {
         if (l >= r) {
             return;
         }
@@ -55,9 +99,8 @@ public class QuickSortThreeWays {
         }
         swap(arr, l, lt, indexArray);
         // 此时 arr[l, lt] < v, arr[lt, gt - 1] == v, arr[gt, r] > v
-
-        sortThreeWays(arr, l, lt - 1, indexArray, random);
-        sortThreeWays(arr, gt, r, indexArray, random);
+        sortThreeWaysDescending(arr, l, lt - 1, indexArray, random);
+        sortThreeWaysDescending(arr, gt, r, indexArray, random);
     }
 
     /**
@@ -78,8 +121,15 @@ public class QuickSortThreeWays {
         indexArray[j] = temp;
 
     }
+
+
+
+
+
+
+
     public static void main(String[] args) {
-        int k = 5;
+        int k = 20;
         Integer[] nums = new Integer[k];
         Random random = new Random();
         for(int i=0; i<k; i++){
@@ -95,7 +145,7 @@ public class QuickSortThreeWays {
             System.out.print(num+",");
         }
 
-        sortThreeWays(nums, indexArray);
+        sortThreeWays(nums, indexArray, false);
         System.out.println("\n排序后的下标值");
         for (int j : indexArray) {
             System.out.print(j+",");

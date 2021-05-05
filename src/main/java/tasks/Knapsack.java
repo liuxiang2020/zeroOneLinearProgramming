@@ -205,7 +205,7 @@ public class Knapsack {
             Double[] temp = new Double[dimension];
             for(int j=0; j<dimension; j++)
                 temp[j] = localUnitPriceOfWeight[i][j];
-            QuickSortThreeWays.sortThreeWays(temp, localDropSeq[i]);
+            QuickSortThreeWays.sortThreeWays(temp, localDropSeq[i], false);
         }
     }
     public void itemPreSortForDAOR(){
@@ -215,7 +215,7 @@ public class Knapsack {
             seq[i] = i;
             temp[i] = unitWeightOfPrices[i];
         }
-        QuickSortThreeWays.sortThreeWays(temp, seq);
+        QuickSortThreeWays.sortThreeWays(temp, seq, false);
         // 更新所有变量
         int[][] weightsCopy = weights.clone();
         int[] pricesCopy = prices.clone();
