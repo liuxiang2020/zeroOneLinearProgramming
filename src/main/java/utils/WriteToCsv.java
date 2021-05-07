@@ -1,5 +1,7 @@
 package utils;
 
+import algorithm.Solution;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -76,6 +78,29 @@ public class WriteToCsv {
         ow.close();
     }
 
+    public static void exportCsv(List<Solution> solutionList, String outputFileName) throws IOException, IllegalArgumentException, IllegalAccessException{
+        File file = new File(outputFileName);
+        //构建输出流，同时指定编码
+        OutputStreamWriter ow = new OutputStreamWriter(new FileOutputStream(file), "gbk");
+        String[] titles = {"文件名称", "算法名称", "修复算子", "文献最优解", "文献最优解状态", "算法最优解", "gap", "迭代次数", "耗时"};
+        for(String title : titles){
+            ow.write(title);
+            ow.write(",");
+        }
+        //写完文件头后换行
+        ow.write("\r\n");
+        //写内容
+        for(Solution solution: solutionList){
+            double gap = (solution.optimal - solution.metaOptimalValue)*1.0/solution.optimal;
+            String line = solution.fileName + "," + solution.metaAlgorithm + "," + solution.repairOperation + "," + solution.optimal + "," +
+                    solution.status + "," + solution.metaOptimalValue + "," + gap + "," + solution.runIter + "," + solution.usedTime + ",";
+            ow.write(line);
+            ow.write("\r\n");
+        }
+        ow.flush();
+        ow.close();
+    }
+
     public static void exportCsv(String fileName,  String title, int[] array) throws IOException, IllegalArgumentException, IllegalAccessException{
         File file = new File(fileName);
         //构建输出流，同时指定编码
@@ -93,4 +118,6 @@ public class WriteToCsv {
         ow.flush();
         ow.close();
     }
+
+
 }

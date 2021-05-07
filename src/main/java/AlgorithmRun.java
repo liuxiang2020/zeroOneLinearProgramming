@@ -1,12 +1,13 @@
 import algorithm.BFA;
 import algorithm.CplexSolve;
+import algorithm.CplexSolveForDual;
 import ilog.concert.IloException;
-import org.jfree.ui.RefineryUtilities;
 import tasks.Knapsack;
 import utils.WriteToCsv;
-import visualization.LineChartDemo;
+
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 
 public class AlgorithmRun {
 
@@ -139,6 +140,16 @@ public class AlgorithmRun {
         return problem;
     }
 
+    public Knapsack testOneProblemDual(String fileType, String filename) throws IloException {
+        Knapsack problem = new Knapsack(fileType, filename);
+        CplexSolveForDual cplexSolve = new CplexSolveForDual(problem);
+        cplexSolve.solveModel();
+        problem.setCplexObjective(cplexSolve.objectiveValue);
+        problem.setCplexGap(cplexSolve.gap);
+        problem.setCplexStatus((cplexSolve.status));
+        return problem;
+    }
+
     public void testOneProblem(Knapsack problem) throws IloException {
         CplexSolve cplexSolve = new CplexSolve(problem);
         cplexSolve.solveModel();
@@ -146,9 +157,9 @@ public class AlgorithmRun {
         problem.setCplexGap(cplexSolve.gap);
     }
 
-    public Knapsack testByBFA(String fileType, String filename) throws IloException, IOException, IllegalAccessException {
+    public Knapsack testByBFA(String fileType, String filename) throws IloException, IOException, IllegalAccessException, InvocationTargetException {
         Knapsack problem = new Knapsack(fileType, filename);
-        problem.itemPreSortForOR2();
+        problem.itemPreSortForRo2();
 //        testOneProblem(problem);
         BFA algorithm = new BFA(problem);
         algorithm.setParam(0.02,100,0,50);
@@ -160,7 +171,8 @@ public class AlgorithmRun {
     public static void main(String[] args) throws IloException, IOException, IllegalAccessException {
 
         AlgorithmRun algorithmRun = new AlgorithmRun();
-        Knapsack problem = algorithmRun.testByBFA("Chu", "src/main/resources/Chu's MKP Benchmarks/OR5x100/OR5x100-0.25_5.dat");
+        Knapsack problem = algorithmRun.testOneProblemDual("Chu", "src/main/resources/Chu's MKP Benchmarks/OR5x100/OR5x100-0.25_5.dat");
+//        Knapsack problem = algorithmRun.testByBFA("Chu", "src/main/resources/Chu's MKP Benchmarks/OR5x100/OR5x100-0.25_5.dat");
 //        algorithmRun.testAllWeingAndGK();
         algorithmRun.testAllChu();
     }

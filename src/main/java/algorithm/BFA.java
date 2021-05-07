@@ -3,6 +3,8 @@ package algorithm;
 import tasks.Knapsack;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Random;
 
 public class BFA extends metaHeuristicForOneZeroProgramming {
@@ -15,9 +17,16 @@ public class BFA extends metaHeuristicForOneZeroProgramming {
     public int maxIter = 10000;
     public double maxTime = 100;
 
+    /*选用的修补算子*/
+    Method method1;
+
     public BFA(Knapsack problem) {
         super(problem);
         this.maxIter = problem.dimension * 100;
+    }
+
+    public void setMaxIter(int value){
+        this.maxIter = value;
     }
 
     public void setParam(double _alpha, double _gama, int _bet0, int _populationSize) {
@@ -27,17 +36,29 @@ public class BFA extends metaHeuristicForOneZeroProgramming {
         setPopulationSize(_populationSize);
     }
 
-    public void bfaSolve() throws IOException, IllegalAccessException {
+    public void setRepairOperation(String funcName) throws NoSuchMethodException {
+        Class[] parameterTypes = new Class[1];
+        parameterTypes[0] = boolean[].class;
+        method1 = BFA.class.getMethod(funcName, parameterTypes);
+    }
+
+    public void bfaSolve() throws IOException, IllegalAccessException, InvocationTargetException {
+
+        int[] indexArray = new int[populationSize];
+        for(int i=0; i<populationSize; i++){
+            indexArray[i] = i;
+        }
+
         // 生成初始解
         initialSolutionRandom();
 //        initialSolutionRoulette();
-        currentBestFitness = getMaxValue(fitnessArray);
-        for(int p=0; p<populationSize; p++){
-            if(fitnessArray[p]==currentBestFitness){
-                currentBestSolution = population[p];
-                break;
-            }
+        /*转换为可行解*/
+        for(int p=0; p<populationSize;p++){
+            repairFun(this, method1, population[p]);
+            fitnessArray[p] = computeFitness(population[p]);
         }
+        /*排序*/
+        sortFitness(indexArray.clone());
         // 更新gamma值
         gama = gama/Math.pow(problem.dimension, 2);
         int iter = 0;
@@ -73,7 +94,8 @@ public class BFA extends metaHeuristicForOneZeroProgramming {
                                 individual1[j] = !individual1[j];
                         }
 
-                        repairDropAddByGroup(individual1);
+//                        repairDropAddByGroup(individual1);
+                        repairFun(this, method1, individual1);
                         //计算适应度函数值
                         fitness = computeFitness(individual1);
 
@@ -85,7 +107,10 @@ public class BFA extends metaHeuristicForOneZeroProgramming {
                             population[p1] = individual1.clone();
                             fitnessArray[p1] = fitness;
                             if (fitness >= problem.optimalValue) {
+                                currentBestFitness = fitness;
+                                currentBestSolution = individual1;
                                 resultOutPut(fitnessIterRecord, iter);
+                                return;
                             }
                         }
                     }
@@ -97,7 +122,9 @@ public class BFA extends metaHeuristicForOneZeroProgramming {
                 if (random.nextDouble() < alpha)
                     individual[j] = !individual[j];
             }
-            repairDropAddByGroup(individual);
+//            repairDropAddByGroup(individual);
+            repairFun(this, method1, individual);
+
             //计算适应度函数值
             int fitness = computeFitness(individual);
             if(fitness>fitnessArray[populationSize-1]){
@@ -106,15 +133,7 @@ public class BFA extends metaHeuristicForOneZeroProgramming {
             }
 
             // 根据亮度重新排序
-            int[] indexArray = new int[populationSize];
-            for(int i=0; i<populationSize; i++){
-                indexArray[i] = i;
-            }
-            QuickSortThreeWays.sortThreeWays(fitnessArray, indexArray, false);
-            boolean[][] populationCopy = population.clone();
-            for(int i=0; i<populationSize; i++){
-                population[i] = populationCopy[populationSize-1-i];
-            }
+            sortFitness(indexArray.clone());
 
             // 更新当前最优解
             if(fitnessArray[populationSize-1]>=currentBestFitness){
@@ -124,19 +143,25 @@ public class BFA extends metaHeuristicForOneZeroProgramming {
             fitnessIterRecord[iter] = currentBestFitness;
 
             iter += 1;
+
+            if(iter % (problem.dimension*10) ==0)
+                System.out.printf("第%d代，当前最好解为:%d，与最优解的gap为%.2f\n", iter, currentBestFitness, (problem.optimalValue-currentBestFitness)*1.0/problem.optimalValue);
         }
         // 检查结果正确性， 并输出
         resultOutPut(fitnessIterRecord, iter);
         // 绘图展示
-        plotIterByPython();
+//        plotIterByPython();
     }
 
-    public void directionalMove() {
+    public void sortFitness(int[] indexArrayCopy){
 
+        boolean[][] populationCopy = population.clone();
+        QuickSortThreeWays.sortThreeWays(fitnessArray, indexArrayCopy, true);
+
+        for(int i=0; i<populationSize; i++){
+            population[i] = populationCopy[indexArrayCopy[i]];
+        }
+        currentBestFitness = fitnessArray[populationSize-1];
+        currentBestSolution = population[populationSize-1];
     }
-
-    public void randomMove() {
-
-    }
-
 }

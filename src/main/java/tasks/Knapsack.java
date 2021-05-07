@@ -5,6 +5,7 @@ import utils.ExcelData;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.Arrays;
 import java.util.Scanner;
 
 public class Knapsack {
@@ -23,6 +24,8 @@ public class Knapsack {
     // add操作使用
     public double[][] localUnitWeightOfPrice;
 
+    public double[] dualUtility;
+
     public int optimalValue;
     public String status = "unKnow";
     public String fileName;
@@ -30,6 +33,7 @@ public class Knapsack {
     public int cplexObjective;
     public double cplexGap;
     public String cplexStatus;
+    public double[] dualVar;
 
     public void setCplexObjective(int value){
         this.cplexObjective = value;
@@ -41,6 +45,12 @@ public class Knapsack {
 
     public void setCplexStatus(String status){
         this.cplexStatus = status;
+    }
+
+    /*设置对偶变量值*/
+    public void setDualVar(double[] duals){
+        dualVar = new double[nConstraint];
+        if (nConstraint >= 0) System.arraycopy(duals, 0, dualVar, 0, nConstraint);
     }
 
     public Knapsack(String filetype, String fileName){
@@ -154,10 +164,8 @@ public class Knapsack {
                 for(int j=0; j<nConstraint; j++){
                     weightSum += weights[j][i];
                 }
-
                 unitWeightOfPrices[i] = weightSum*1.0/prices[i];
                 unitPriceOfWeight[i] = 1.0/unitWeightOfPrices[i];
-
             }
 
             for(int i=0; i<nConstraint; i++)
@@ -194,7 +202,7 @@ public class Knapsack {
      * 提前对变量和约束排序
      * 排序指标：price, weight， weight/price
      */
-    public void itemPreSortForOR2(){
+    public void itemPreSortForRo2(){
         localDropSeq = new int[nConstraint][dimension];
         for(int i=0; i<nConstraint; i++){
             for(int j=0; j < dimension; j++){
@@ -208,6 +216,7 @@ public class Knapsack {
             QuickSortThreeWays.sortThreeWays(temp, localDropSeq[i], false);
         }
     }
+
     public void itemPreSortForDAOR(){
         int[] seq = new int[dimension];
         Double[] temp = new Double[dimension];
@@ -216,18 +225,60 @@ public class Knapsack {
             temp[i] = unitWeightOfPrices[i];
         }
         QuickSortThreeWays.sortThreeWays(temp, seq, false);
-        // 更新所有变量
-        int[][] weightsCopy = weights.clone();
+        updateVarIndex(seq);
+    }
+
+    /*按照对偶变量值排序*/
+    public void iterPreSortForDUal(double[] dualVar){
+
+        localDropSeq = new int[nConstraint][dimension];
+        for(int i=0; i<nConstraint; i++){
+            for(int j=0; j < dimension; j++){
+                localDropSeq[i][j] = j;
+            }
+        }
+
+        int[] seq = new int[dimension];
+        Double[] temp = new Double[dimension];
+        for(int j=0; j<dimension; j++){
+            /*求伪效用*/
+            int sum = 0;
+            for(int i=0; i<nConstraint; i++){
+                sum += weights[i][j]*dualVar[i];
+            }
+            temp[j] = prices[j]*1.0/sum;
+            seq[j] = j;
+        }
+        QuickSortThreeWays.sortThreeWays(temp, seq, false);
+        /*更新所有变量的下标*/
+        updateVarIndex(seq);
+
+        /*设置对偶伪效用*/
+        dualUtility = new double[dimension];
+        for(int i=0; i<dimension; i++){
+            dualUtility[i] = temp[i];
+        }
+    }
+
+    private void updateVarIndex(int[] seq){
+
         int[] pricesCopy = prices.clone();
-//        int[] priceWeightLineNumbers;
         double[] unitWeightOfPricesCopy = unitWeightOfPrices.clone();
         double[] unitPriceOfWeightCopy = unitPriceOfWeight.clone();
-
+        // 更新所有变量
+        int[][] weightsCopy = new int[nConstraint][dimension];
         // drop操作使用
-        double[][] localUnitPriceOfWeightCopy = localUnitPriceOfWeight.clone();
-        int[][] localDropSeqCopy = localDropSeq.clone();
+        double[][] localUnitPriceOfWeightCopy = new double[nConstraint][dimension];
+        int[][] localDropSeqCopy = new int[nConstraint][dimension];
         // add操作使用
-        double[][] localUnitWeightOfPriceCopy = localUnitWeightOfPrice.clone();
+        double[][] localUnitWeightOfPriceCopy = new double[nConstraint][dimension];
+
+        for(int i=0; i<nConstraint; i++){
+            weightsCopy[i] = weights[i].clone();
+            localUnitPriceOfWeightCopy[i] = localUnitPriceOfWeight[i].clone();
+            localDropSeqCopy[i] = localDropSeq[i].clone();
+            localUnitWeightOfPriceCopy[i] = localUnitWeightOfPrice[i].clone();
+        }
 
         for(int j=0; j<dimension; j++){
             int index = seq[j];
