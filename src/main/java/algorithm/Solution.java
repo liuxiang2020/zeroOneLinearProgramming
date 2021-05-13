@@ -11,6 +11,7 @@ public class Solution {
     public String fileName;
     public int optimal;
     public String status;
+    public int testK;
 
     /*算法基础信息*/
     public String metaAlgorithm;
@@ -37,6 +38,10 @@ public class Solution {
 
     public void setFileName(String fileName) {
        this.fileName = fileName;
+    }
+
+    public void setTestK(int test){
+        testK = test;
     }
 
     /**

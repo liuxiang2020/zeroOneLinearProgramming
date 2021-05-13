@@ -68,21 +68,20 @@ public class CplexSolve {
 
         if (model.getStatus() == IloCplex.Status.Feasible | model.getStatus() == IloCplex.Status.Optimal) {
 
-            System.out.println("Solution status = "+ model.getStatus());
-            int sumPrices = 0;
-            int chooseItemNum= 0;
-            for (int j = 0; j < problem.dimension; j++) {
-                if (model.getValue(x[j]) == 1) {
-                    System.out.println(
-                            "Item " + j + " - price: " + problem.prices[j]);
-                    sumPrices += problem.prices[j];
-                    chooseItemNum += 1;
-                }
-            }
+//            System.out.println("Solution status = "+ model.getStatus());
+//            int sumPrices = 0;
+//            int chooseItemNum= 0;
+//            for (int j = 0; j < problem.dimension; j++) {
+//                if (model.getValue(x[j]) == 1) {
+//                    System.out.println("Item " + j + " - price: " + problem.prices[j]);
+//                    sumPrices += problem.prices[j];
+//                    chooseItemNum += 1;
+//                }
+//            }
             objectiveValue = (int) model.getObjValue();
             gap = model.getMIPRelativeGap();
             status = model.getStatus().toString();
-            System.out.printf("目标函数值为%d:, 选择了%d个商品%n", objectiveValue, chooseItemNum);
+//            System.out.printf("目标函数值为%d:, 选择了%d个商品%n", objectiveValue, chooseItemNum);
         } else {
             System.out.println("The problem status is:" + model.getStatus());
         }

@@ -214,6 +214,7 @@ public class Knapsack {
             for(int j=0; j<dimension; j++)
                 temp[j] = localUnitPriceOfWeight[i][j];
             QuickSortThreeWays.sortThreeWays(temp, localDropSeq[i], false);
+            System.out.println(temp);
         }
     }
 
@@ -229,7 +230,7 @@ public class Knapsack {
     }
 
     /*按照对偶变量值排序*/
-    public void iterPreSortForDUal(double[] dualVar){
+    public void iterPreSortForDual(double[] dualVar){
 
         localDropSeq = new int[nConstraint][dimension];
         for(int i=0; i<nConstraint; i++){
@@ -249,7 +250,7 @@ public class Knapsack {
             temp[j] = prices[j]*1.0/sum;
             seq[j] = j;
         }
-        QuickSortThreeWays.sortThreeWays(temp, seq, false);
+        QuickSortThreeWays.sortThreeWays(temp, seq, true);
         /*更新所有变量的下标*/
         updateVarIndex(seq);
 

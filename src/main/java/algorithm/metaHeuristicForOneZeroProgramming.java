@@ -117,7 +117,6 @@ public class metaHeuristicForOneZeroProgramming {
     public void initialSolutionRoulette(){
 
         population = new boolean[populationSize][dimension];
-        fitnessArray = new Integer[populationSize];
         int p=0;
         while(p<populationSize){
             for(int i=0; i<constraintNum & p < populationSize; i++){
@@ -151,9 +150,10 @@ public class metaHeuristicForOneZeroProgramming {
             }
         }
 
-        for(p=0; p<populationSize;p++){
-            fitnessArray[p] = computeFitness(population[p]);
-        }
+//        fitnessArray = new Integer[populationSize];
+//        for(p=0; p<populationSize;p++){
+//            fitnessArray[p] = computeFitness(population[p]);
+//        }
 //        population = new boolean[populationSize][dimension];
 //        for(int p=0; p<populationSize; p++){
 //            List<Integer> itemIndexList = new ArrayList<>();
@@ -178,6 +178,40 @@ public class metaHeuristicForOneZeroProgramming {
 //        }
     }
 
+    /*文献中遗传算法生成初始解的方法*/
+    public void initialSolutionForBGA(){
+        population = new boolean[populationSize][dimension];
+        for(int p=0; p<populationSize; p++){
+            /*随机顺序集合*/
+            List<Integer> T = new ArrayList<>(dimension);
+            for(int j=0; j<dimension; j++){
+                T.add(j);
+            }
+            Random random = new Random();
+            /*添加元素*/
+            boolean[] individual = new boolean[dimension];
+            int[] useResource = new int[constraintNum];
+            for(int j=0; j<dimension; j++){
+                Integer index = T.remove(random.nextInt(T.size()));
+                boolean add=true;
+                for(int i=0; i<constraintNum; i++){
+                    if(useResource[i]+ problem.weights[i][index] > problem.capacity[i]){
+                        add = false;
+                        individual[index] = false;
+                        break;
+                    }
+                }
+                if(add){
+                    for(int i=0; i<constraintNum; i++){
+                        useResource[i] += problem.weights[i][index];
+                        individual[index] = true;
+                    }
+                }
+            }
+            population[p] = individual.clone();
+        }
+    }
+
     public int computeFitness(boolean[] individual){
         int fitness = 0;
         for(int i=0; i<dimension; i++){
@@ -197,25 +231,40 @@ public class metaHeuristicForOneZeroProgramming {
         // 判断每个约束违反的程度并排序
         Integer[] gapArray = new Integer[constraintNum];
         int[] dropConsSeq = new int[constraintNum];
-        sortGapArray(individual, gapArray, dropConsSeq);
 
+        /*不排序丢弃*/
+//        for(int i=0; i<constraintNum; i++){
+//            if(gapArray[i]>0) {
+//                for (int dropIndex : problem.localDropSeq[i]) {
+//                    if (individual[dropIndex]) {
+//                        individual[dropIndex] = false;
+//                        for (int k = i; k < constraintNum; k++) {
+//                            gapArray[k] -= problem.weights[k][dropIndex];
+//                        }
+//                        if (gapArray[i] <= 0)
+//                            break;
+//                    }
+//                }
+//            }
+//        }
+        /*排序丢弃*/
+        sortGapArray(individual, gapArray, dropConsSeq, true);
         for(int i=0; i<constraintNum; i++){
-            if(gapArray[i]<=0){
-                break;
-            }
-            int index = dropConsSeq[i];
-            for(int dropIndex: problem.localDropSeq[index]){
-                if(individual[dropIndex]){
-                    individual[dropIndex] = false;
-                    for(int k=0; k<constraintNum; k++){
-                        gapArray[k] -= problem.weights[dropConsSeq[k]][dropIndex];
+            if(gapArray[i]>0) {
+                int index = dropConsSeq[i];
+                for (int dropIndex : problem.localDropSeq[index]) {
+                    if (individual[dropIndex]) {
+                        individual[dropIndex] = false;
+                        for (int k = i; k < constraintNum; k++) {
+                            gapArray[k] -= problem.weights[dropConsSeq[k]][dropIndex];
+                        }
+                        if (gapArray[i] <= 0)
+                            break;
                     }
-                    if(gapArray[i]<=0)
-                        break;
                 }
             }
         }
-        // 增加操作: 逆序增加
+        // 增加操作
         Integer[] leftArray = new Integer[constraintNum];
         int[] addConsSeq = new int[constraintNum];
         for(int i=0; i<constraintNum; i++){
@@ -230,7 +279,7 @@ public class metaHeuristicForOneZeroProgramming {
             if(!individual[j]){
                 boolean flag = true;
                 for(int i=0; i<constraintNum; i++){
-                    if(!(leftArray[i] - problem.weights[addConsSeq[i]][j]>=0)){
+                    if(leftArray[i] - problem.weights[addConsSeq[i]][j]<0){
                         flag = false;
                         break;
                     }
@@ -238,7 +287,7 @@ public class metaHeuristicForOneZeroProgramming {
                 if(flag){
                     individual[j] = true;
                     for(int i=0; i<constraintNum; i++){
-                        leftArray[i] -= problem.weights[i][j];
+                        leftArray[i] -= problem.weights[addConsSeq[i]][j];
                     }
                 }
             }
@@ -259,7 +308,7 @@ public class metaHeuristicForOneZeroProgramming {
         // 判断每个约束违反的程度并排序
         Integer[] gapArray = new Integer[constraintNum];
         int[] dropConsSeq = new int[constraintNum];
-        sortGapArray(individual, gapArray, dropConsSeq);
+        sortGapArray(individual, gapArray, dropConsSeq, true);
         // 丢弃操作,暂时分为两组测试
         int thread = new Random().nextInt(constraintNum);
         if(thread==0)
@@ -273,6 +322,8 @@ public class metaHeuristicForOneZeroProgramming {
         if(addItem.getCandidateItem()){
             // 提供了三种增加操作
             int[] candidateItem = addItem.addRouletteByPrice();
+//            int[] candidateItem = addItem.addByPrice();
+
             for (int index: candidateItem){
                 boolean flag = true;
                 //检查是否可添加
@@ -349,35 +400,59 @@ public class metaHeuristicForOneZeroProgramming {
         }
     }
 
+//    private void dropItems(int startConstraintIndex, int endConstraintIndex, int[] dropConsSeq, boolean[] individual){
+//        HashSet<Integer> dropIndexSet = new HashSet<>();
+//        for(int p=startConstraintIndex; p<endConstraintIndex; p++){
+//            int indexC = dropConsSeq[p];
+//            int gap = getConstraintTotalWeight(individual, indexC) - problem.capacity[indexC];
+//
+//            if(gap>0){
+//                int chooseItemNum = getChooseItemNum(individual);
+////                Double[] chooseItemDropProbability = new Double[chooseItemNum];
+//                int[] chooseItemIndex = new int[chooseItemNum];
+//                int k = 0;
+//                Random random = new Random();
+//                for(int j=0; j<dimension; j++){
+//                    if(individual[j]){
+////                        chooseItemDropProbability[k] = localUnitPriceOfWeight[indexC][j]*random.nextDouble();
+//                        chooseItemIndex[k] = j;
+//                        k +=1;
+//                    }
+//                }
+////                QuickSortThreeWays.sortThreeWays(chooseItemDropProbability, chooseItemIndex, false);
+//                // 排查对于此约束应该删除的变量
+//                int index = 0;
+//                int dropValue = 0;
+//                // 整理丢弃变量的下标
+//                while(dropValue < gap){
+//                    int dropIndex = chooseItemIndex[index];
+//                    dropValue += problem.weights[indexC][dropIndex];
+//                    dropIndexSet.add(dropIndex);
+//                    index += 1;
+//                }
+//            }
+//        }
+//        // 删除变量
+//        for(int index: dropIndexSet){
+//            individual[index] = false;
+//        }
+//    }
     private void dropItems(int startConstraintIndex, int endConstraintIndex, int[] dropConsSeq, boolean[] individual){
         HashSet<Integer> dropIndexSet = new HashSet<>();
         for(int p=startConstraintIndex; p<endConstraintIndex; p++){
             int indexC = dropConsSeq[p];
             int gap = getConstraintTotalWeight(individual, indexC) - problem.capacity[indexC];
-
             if(gap>0){
-                int chooseItemNum = getChooseItemNum(individual);
-                Double[] chooseItemDropProbability = new Double[chooseItemNum];
-                int[] chooseItemIndex = new int[chooseItemNum];
-                int k = 0;
-                Random random = new Random();
-                for(int j=0; j<dimension; j++){
-                    if(individual[j]){
-                        chooseItemDropProbability[k] = localUnitPriceOfWeight[indexC][j]*random.nextDouble();
-                        chooseItemIndex[k] = j;
-                        k +=1;
-                    }
-                }
-                QuickSortThreeWays.sortThreeWays(chooseItemDropProbability, chooseItemIndex, false);
                 // 排查对于此约束应该删除的变量
-                int index = 0;
                 int dropValue = 0;
-                // 整理丢弃变量的下标
-                while(dropValue < gap){
-                    int dropIndex = chooseItemIndex[index];
-                    dropValue += problem.weights[indexC][dropIndex];
-                    dropIndexSet.add(dropIndex);
-                    index += 1;
+                for(int dropIndex: problem.localDropSeq[indexC]){
+                    if(individual[dropIndex]){
+                        dropValue += problem.weights[indexC][dropIndex];
+                        dropIndexSet.add(dropIndex);
+                        if(dropValue>gap){
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -396,14 +471,14 @@ public class metaHeuristicForOneZeroProgramming {
         return chooseItemNum;
     }
 
-    private void sortGapArray(boolean[] individual, Integer[] gapArray, int[] dropConsSeq){
+    private void sortGapArray(boolean[] individual, Integer[] gapArray, int[] dropConsSeq, boolean ascending){
 
         // 判断每个约束违反的程度
         for(int i=0; i<constraintNum; i++){
             dropConsSeq[i] = i;
             gapArray[i] = getConstraintTotalWeight(individual, i) - problem.capacity[i];
         }
-        QuickSortThreeWays.sortThreeWays(gapArray, dropConsSeq, false);
+        QuickSortThreeWays.sortThreeWays(gapArray, dropConsSeq, ascending);
     }
 
     //增加操作准备类
@@ -520,7 +595,6 @@ public class metaHeuristicForOneZeroProgramming {
         }
         return weightSum;
     }
-
 
 
     /**
